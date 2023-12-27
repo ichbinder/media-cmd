@@ -1,0 +1,36 @@
+{
+    "name": "mongodb-fill-media-cmd",
+    "version": "0.0.5",
+    "description": "Fill mongodb for media-cmd",
+    "author": "Jakob Schattka",
+    "license": "LGPL-3.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ichbinder/media-cmd.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ichbinder/media-cmd/issues"
+    },
+    "homepage": "https://github.com/ichbinder/media-cmd#readme",
+    "keywords": [
+        "media",
+        "media-cmd",
+        "usenet",
+        "mongo"
+    ],
+    "private": true,
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "fs": "^0.0.1-security",
+        "mongodb": "^6.3.0"
+    },
+        "devDependencies": {
+        "@types/node": "^20.9.2"
+    }
+}
