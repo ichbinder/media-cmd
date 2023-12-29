@@ -2,9 +2,13 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { useUserStore } from '../store/useUserStore';
 import { SearchMovie, SearchMovieQuery, SearchMovieResponse, MovieDetailsResponse } from '../store/useTmdbStore';
 
-const getToken = (): string | undefined => useUserStore.getState().user?.token;
+const apiURL: string | undefined = process.env.API_URL;
 
-const apiURL = 'http://localhost:5001';
+if (!apiURL) {
+    throw new Error('Please define the environment variable API_URL.');
+}
+
+const getToken = (): string | undefined => useUserStore.getState().user?.token;
 
 const api = axios.create({
     baseURL: apiURL,

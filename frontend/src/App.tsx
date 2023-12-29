@@ -6,6 +6,7 @@ import { useUserStore } from './store/useUserStore';
 import { AuthCheck } from './components/AuthCheck';
 import Movie from './pages/Movie';
 import MenuBar from './components/TopBar';
+import Home from './pages/Home';
 
 const AppRouter = () => {
     const isLoggedIn = useUserStore(state => state.loggedIn);
@@ -18,6 +19,7 @@ const AppRouter = () => {
                     <Route path="/login" element={<Login />} />
                     <Route element={<ProtectedRoute isAllowed={isLoggedIn} />}>
                         <Route path="/movie" element={<Movie />} />
+                        <Route path="/" element={<Home />} />
                     </Route>
                 </Routes>
             </MenuBar>

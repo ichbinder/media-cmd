@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/react
 # Edit at https://www.toptal.com/developers/gitignore?templates=react
 
+.env
+.env.development
+.env.production
+
 ### react ###
 .DS_*
 *.log
@@ -17,5 +21,6 @@ dist
 psd
 thumb
 sketch
+
 
 # End of https://www.toptal.com/developers/gitignore/api/react

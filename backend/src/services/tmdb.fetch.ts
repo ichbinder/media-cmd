@@ -4,10 +4,10 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const apiKey: string | undefined = process.env.API_KEY;
+const apiKey: string | undefined = process.env.TMDB_API_KEY;
 
 if (!apiKey) {
-    throw new Error('Please define the environment variable API_KEY.');
+    throw new Error('Please define the environment variable TMDB_API_KEY.');
 }
 
 const baseUrl = 'https://api.themoviedb.org';
