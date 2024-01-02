@@ -1,38 +1,87 @@
 import { MongoClient } from 'mongodb';
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from 'axios';
+import readline from 'readline';
+import crypto from 'crypto';
+import * as dotenv from 'dotenv';
 
-// Pfad zum Verzeichnis, das die NZB-Dateien enthält
-const dirPath: string = './nzbs';
+dotenv.config();
 
-// Pfad zum Verzeichnis, in das die archivierten NZB-Dateien verschoben werden sollen
-const archiveDirPath: string = './nzbArchive';
+const tmdbApiKey: string | undefined = process.env.TMDB_API_KEY;
 
-// Stellen Sie sicher, dass das Archiv-Verzeichnis existiert, erstellen Sie es sonst
-if (!fs.existsSync(archiveDirPath)) {
-    fs.mkdirSync(archiveDirPath, { recursive: true });
+if (!tmdbApiKey) {
+    throw new Error('Please define the environment variable TMDB_API_KEY.');
 }
 
-// MongoDB URL - Stellen Sie sicher, dass die URL und der Port korrekt sind.
-const url: string = 'mongodb://root:example@localhost:27017';
+const url: string | undefined = process.env.MONGODB_URL;
 
-// Name der Datenbank und Sammlung
+if (!url) {
+  throw new Error('Please define the environment variable MONGODB_URL.');
+}
+
+// Konfiguration
+const dirPath: string = './nzbs';
+const archiveDirPath: string = './nzbArchive';
 const dbName: string = 'media_cms';
 const colName: string = 'movies';
 
-// Funktion, um Dateinamen zu extrahieren und in die MongoDB einzufügen
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+const askUser = (question: string): Promise<string> => {
+  return new Promise((resolve) => {
+    rl.question(question, (input) => resolve(input));
+  });
+};
+
+const searchTmdb = async (name: string, year: string): Promise<any> => {
+  const response = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
+    params: {
+      query: name,
+      year: year
+    },
+    headers: {
+      'Authorization': `Bearer ${tmdbApiKey}`
+    }
+  });
+  return response.data.results;
+};
+
+const createFileHash = (filePath: string): string => {
+  const fileBuffer = fs.readFileSync(filePath);
+  const hashSum = crypto.createHash('sha256');
+  hashSum.update(fileBuffer);
+  return hashSum.digest('hex');
+};
+
+const searchTmdbWithManualEntry = async (originalName: string, year: string): Promise<any> => {
+  let movies = await searchTmdb(originalName, year);
+  if (movies.length === 0) {
+    console.log(`Keine Filme gefunden für: ${originalName} (${year})`);
+    let newName = await askUser('Geben Sie einen anderen Filmtitel ein, drücken Sie Enter, um zu überspringen, oder geben Sie "manual" ein, um einen Titel manuell festzulegen: ');
+    if (newName.toLowerCase() === 'manual') {
+      newName = await askUser('Geben Sie den gewünschten Titel ein: ');
+      return [{ title: newName, manualEntry: true, year: year }];
+    } else if (newName) {
+      movies = await searchTmdb(newName, year);
+    }
+  }
+  return movies;
+};
+
 const insertNZBIntoMongo = async (): Promise<void> => {
   const client: MongoClient = new MongoClient(url);
 
   try {
-    // Verbindung zu MongoDB
     await client.connect();
     console.log('Connected to MongoDB');
     
     const db = client.db(dbName);
     const collection = db.collection(colName);
-    
-    // Lese alle Dateien im Ordner
+
     const files: string[] = fs.readdirSync(dirPath);
 
     for (const file of files) {
@@ -42,35 +91,66 @@ const insertNZBIntoMongo = async (): Promise<void> => {
           const name: string = match[1].replace(/_/g, ' ');
           const year: string = match[2];
 
-          // Lese den Inhalt der NZB-Datei als Text
-          const filePath: string = path.join(dirPath, file);
-          const fileData: string = fs.readFileSync(filePath, { encoding: 'utf-8' });
+          const movies = await searchTmdbWithManualEntry(name, year);
 
-          // Erstelle ein Dokument für MongoDB
-          const document: { name: string, year: string, nzbContent: string } = {
-            name,
-            year,
-            nzbContent: fileData
-          };
+          if (movies.length > 0) {
+            const selectedMovie = movies[0];
+            const nzbFilePath = path.join(dirPath, file);
+            const fileHash = createFileHash(nzbFilePath);
 
-          // Füge das Dokument in die MongoDB Sammlung ein
-          await collection.insertOne(document);
+            const existingVersion = await collection.findOne({
+              'versions.hash': fileHash
+            });
 
-          // Verschiebe die NZB-Datei in den Archiv-Ordner
-          const newFilePath: string = path.join(archiveDirPath, file);
-          fs.renameSync(filePath, newFilePath);
+            if (!existingVersion) {
+              const nzbContent = fs.readFileSync(nzbFilePath, { encoding: 'utf-8' });
+
+              const newVersion = {
+                resolution: '1080p',
+                nzbFile: nzbContent,
+                hash: fileHash
+              };
+
+              if (selectedMovie.manualEntry) {
+                await collection.insertOne({
+                  title: selectedMovie.title,
+                  year: selectedMovie.year,
+                  versions: [newVersion]
+                });
+              } else {
+                const existingDocument = await collection.findOne({ tmdbId: selectedMovie.id });
+                if (existingDocument) {
+                  await collection.updateOne(
+                    { tmdbId: selectedMovie.id },
+                    { $push: { versions: newVersion } }
+                  );
+                } else {
+                  selectedMovie.tmdbId = selectedMovie.id;
+                  delete selectedMovie.id;
+                  selectedMovie.versions = [newVersion];
+                  await collection.insertOne(selectedMovie);
+                }
+              }
+
+              const newFilePath: string = path.join(archiveDirPath, file);
+              fs.renameSync(nzbFilePath, newFilePath);
+            } else {
+              console.log(`Eine Version mit demselben Hash (${fileHash}) existiert bereits in der Datenbank.`);
+            }
+          }
         }
       }
     }
   } catch (err) {
     console.error('An error occurred:', err);
   } finally {
-    // Schließe die Verbindung
     await client.close();
     console.log('MongoDB connection closed');
+    rl.close();
   }
 };
 
-// Führe die Funktion aus
 insertNZBIntoMongo();
+
+
 
