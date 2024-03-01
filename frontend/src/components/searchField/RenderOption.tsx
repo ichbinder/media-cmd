@@ -21,7 +21,7 @@ const RenderOption: FunctionComponent<PropsWithChildren<RenderOptionProps>> = (p
                 margin: '10px',
             }}
         >
-            <Poster title={props.title} posterPath={props.poster_path} size={PosterSize.sm} />
+            <Poster title={props.title} posterPath={props.poster_path} size={PosterSize.SM} />
             <Box
                 sx={{ marginLeft: '10px' }}>   
                 <Typography fontSize={'12px'} color={'#f4645a'} fontWeight={'bold'}>

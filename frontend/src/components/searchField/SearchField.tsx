@@ -71,9 +71,7 @@ const SearchField: FunctionComponent<PropsWithChildren> = (props) => {
     // Add null check for searchResults
     const options = searchResults.results ? searchResults.results : [];
 
-    const getOptionLabel = (option: SearchMovie | String): string => {
-        console.log(option);
-        
+    const getOptionLabel = (option: SearchMovie | String): string => {        
         if (typeof option === "string") {
             return option;
         }

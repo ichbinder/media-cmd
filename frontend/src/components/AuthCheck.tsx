@@ -12,8 +12,6 @@ export const AuthCheck: React.FC = () => {
         const validateToken = async () => {
             try {
                 const response: boolean = await checkToken();
-                console.log(response);
-                console.log(loggedIn);
                 if (!response) {
                     navigate('/login');
                 }
