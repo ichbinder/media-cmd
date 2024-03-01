@@ -42,6 +42,17 @@ const PosterRating: FunctionComponent<PropsWithChildren<PosterRatingProps>> = (p
     const size = props.size || PosterRatingSize.LG;
     const color = props.color || PosterRatingColor.DEFAULT;
     const percentage = Math.round((props.rating / 10) * 100);
+
+    const innerCircleSize = (position: PosterRatingSizeTypes) => {
+        if (size === PosterRatingSize.LG) {
+            return PosterRatingSize.LG - 11;
+        } else if (size === PosterRatingSize.MD) {
+            return PosterRatingSize.MD - 8;
+        } else {
+            return PosterRatingSize.SM - 5;
+        }
+    }
+    
     return (
         <CircularPosterRating
             sx={{
@@ -57,8 +68,8 @@ const PosterRating: FunctionComponent<PropsWithChildren<PosterRatingProps>> = (p
             />
             <Box
                 sx={{
-                    width: `${size - 11}px`,
-                    height: `${size - 11}px`,
+                    width: `${innerCircleSize(size)}px`,
+                    height: `${innerCircleSize(size)}px`,
                     borderRadius: '50%',
                     backgroundColor: '#ffffff',
                     position: 'absolute',
@@ -69,9 +80,9 @@ const PosterRating: FunctionComponent<PropsWithChildren<PosterRatingProps>> = (p
             >
                 <Typography
                     sx={{
-                        margin: '0 0 0 3px'
+                        margin: '0 0 0 3px',
                     }}
-                    variant='h5'
+                    fontSize={size === PosterRatingSize.LG ? `${size / 4 + 6}px` : `${size / 3}px`}
                     component='div'
                     color={theme.palette.secondary.main}
                 >
