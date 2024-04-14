@@ -12,7 +12,7 @@ const BackdropWrapper = styled('div', {
     label: 'backdropWrapper'
 })(({ theme }) => ({
     width: '100%',
-    position: 'absolute',
+    position: 'relative',
     display: 'flex',
     justifyContent: 'center',
 }));
@@ -111,6 +111,9 @@ const Movie: FunctionComponent<PropsWithChildren<MovieProps>> = (props) => {
                 </MovieTopInfo>
             </BackdropWrapper>
             <Container maxWidth="lg">
+                <Box>
+
+                </Box>
                 {movieDetails.overview}
             </Container>
         </>
